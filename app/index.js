@@ -3,6 +3,7 @@ const app = express();
 import urlRouter from "./routes/urls";
 import indexRouter from "./routes/index";
 import authRouter from "./routes/auth";
+import linkRouter from "./routes/links";
 import connectDB from "./config/db";
 import { config } from "dotenv";
 config();
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/links", linkRouter);
 app.use("/api", urlRouter);
 app.use("/", indexRouter);
 

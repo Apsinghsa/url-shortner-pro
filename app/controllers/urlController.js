@@ -42,14 +42,20 @@ export async function shortenUrl(req, res) {
     const urlCode = nanoid(8);
     const shortUrl = `${process.env.BASE_URL}/${urlCode}`;
 
-    url = await Url.create({
-      urlCode,
+    const newUrlData = {
       longUrl,
       shortUrl,
-    });
+      urlCode,
+    };
+
+    if (req.user) {
+      newUrlData.user = req.user.id;
+    }
+
+    url = await Url.create(newUrlData);
+
     res.status(201).json({
       success: true,
-      message: "Url is new, code generated, and saved to DB!!",
       data: { url },
     });
   } catch (e) {
