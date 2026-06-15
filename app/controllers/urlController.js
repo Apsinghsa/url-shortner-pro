@@ -35,7 +35,7 @@ export async function shortenUrl(req, res) {
       return res.status(200).json({
         success: true,
         message: "Url already exists",
-        data: url,
+        data: { url },
       });
     }
 
@@ -56,6 +56,7 @@ export async function shortenUrl(req, res) {
 
     res.status(201).json({
       success: true,
+      message: "Short Url created",
       data: { url },
     });
   } catch (e) {
