@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 const app = express();
 import urlRouter from "./routes/urls.js";
 import indexRouter from "./routes/index.js";
@@ -10,6 +11,18 @@ config();
 const PORT = process.env.PORT || 5000;
 
 connectDB();
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://url-shortner-pro.vercel.app",
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
