@@ -1,10 +1,10 @@
 import express from "express";
 const app = express();
-import urlRouter from "./routes/urls";
-import indexRouter from "./routes/index";
-import authRouter from "./routes/auth";
-import linkRouter from "./routes/links";
-import connectDB from "./config/db";
+import urlRouter from "./routes/urls.js";
+import indexRouter from "./routes/index.js";
+import authRouter from "./routes/auth.js";
+import linkRouter from "./routes/links.js";
+import connectDB from "./config/db.js";
 import { config } from "dotenv";
 config();
 const PORT = process.env.PORT || 5000;
