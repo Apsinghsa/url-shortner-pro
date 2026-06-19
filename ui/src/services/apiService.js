@@ -7,17 +7,19 @@ export async function createShortUrl(longUrl) {
       },
       body: JSON.stringify({ longUrl }),
     });
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.log("Failed to shorten the url:", err);
-    if (err.response && err.response.data) {
-      throw err.response.data;
-    } else {
-      throw new Error(
-        "an Unexpected error occured, please try again!",
-        `Reason : ${err}`,
-      );
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || "Failed to shorten URL");
     }
+
+    console.log(response.json());
+    return response.json();
+  } catch (err) {
+    console.error("Failed to shorten the url:", err);
+    throw new Error(
+      `An unexpected error occurred, please try again! Reason: ${err.message}`,
+      { cause: err },
+    );
   }
 }

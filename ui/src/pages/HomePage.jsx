@@ -16,7 +16,7 @@ export default function HomePage() {
     try {
       setError("");
       const response = await createShortUrl(longUrl);
-      setShortUrlData(response.data.url);
+      setShortUrlData(response);
     } catch (error) {
       const errorMessage = error.error || "An unexpected error occured!";
       setError(errorMessage);
