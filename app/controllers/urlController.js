@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import validUrl from "valid-url";
-import Url from "../models/Url";
+import Url from "../models/Url.js";
 
 export async function shortenUrl(req, res) {
   if (!req.body) {

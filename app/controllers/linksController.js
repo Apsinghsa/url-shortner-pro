@@ -1,4 +1,4 @@
-import Url from "../models/Url";
+import Url from "../models/Url.js";
 
 export async function getMyLinks(req, res) {
   try {
