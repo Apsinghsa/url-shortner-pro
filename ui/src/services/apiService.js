@@ -1,6 +1,8 @@
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 export async function createShortUrl(longUrl) {
   try {
-    const response = await fetch("/api/shorten", {
+    const response = await fetch(API_BASE + "/api/shorten", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

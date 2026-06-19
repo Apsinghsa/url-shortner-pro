@@ -1,4 +1,5 @@
-const API_URL = "/api/auth";
+const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_URL = API_BASE + "/api/auth";
 
 export async function registerUser(userData) {
   try {
