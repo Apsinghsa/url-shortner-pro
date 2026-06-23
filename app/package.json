@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "bun --watch index.js"
+    "dev": "nodeman index.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
