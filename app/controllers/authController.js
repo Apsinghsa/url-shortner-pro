@@ -47,7 +47,8 @@ const registerUser = async (req, res) => {
     console.error("Registration error : ", err);
     res.status(500);
     throw new Error("Internal server error: ");
-  };
+  }
+};
 
 const loginUser = async (req, res, next) => {
   try {
