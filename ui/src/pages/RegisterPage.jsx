@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState("");
   const [success, setSuccess] = useState("");
   const [formErrors, setFormErrors] = useState({});
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const validate = () => {
     const errors = {};
@@ -53,9 +56,14 @@ export default function RegisterPage() {
       const response = await registerUser(formData);
 
       console.log("Registration successful:", response);
-      setSuccess("Registration successful");
 
-      setFormData({ name: "", email: "", password: "" });
+      if (response.token) {
+        login(response.token);
+        navigate("/dashboard");
+      } else {
+        setSuccess("Registration successful");
+        setFormData({ name: "", email: "", password: "" });
+      }
     } catch (err) {
       const errorMessage =
         err.message || "Registration failed, Please try again";
