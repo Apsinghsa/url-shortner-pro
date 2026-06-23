@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #0d6efd;
+  --color-primary-hover: #0b5ed7;
+  --color-success: #198754;
+  --color-danger: #dc3545;
+  --color-navbar: #2c3e50;
+  --color-navbar-text: #ecf0f1;
+  --color-navbar-hover: #3498db;
+  --color-link: #007bff;
+  --color-link-hover: #0056b3;
+  --color-table-border: #ddd;
+  --color-table-header: #333;
+}

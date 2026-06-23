@@ -5,28 +5,26 @@ import jwt from "jsonwebtoken";
 
 const registerUser = async (req, res) => {
   try {
+    if (!req.body) {
+      res.status(400);
+      throw new Error("Invalid request!");
+    }
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide name email and password!!",
-      });
+      res.status(400);
+      throw new Error("Please enter email and password");
     }
 
     if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long!!",
-      });
+      res.status(400);
+      throw new Error("Password should be more then 8 characters")
     }
 
     const existingUser = await User.findOne({ email: email });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        messasge: "A user with this email already exists!!",
-      });
+      res.status(400);
+      throw new Error("A user with this email already exists!!");
     }
 
     // Hashing the password
@@ -47,35 +45,28 @@ const registerUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Registration error : ", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error!! :( !!" });
-  }
-};
+    res.status(500);
+    throw new Error("Internal server error: ");
+  };
 
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   try {
     if (!req.body) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Request!!",
-      });
+      res.status(400);
+      throw new Error("Invalid request!");
     }
 
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide email and password!!",
-      });
+      res.status(400);
+      throw new Error("Please enter email and password");
     }
 
     const user = await User.findOne({ email: email }).select("+password");
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials!!" });
+      res.status(401);
+      throw new Error("Invalid credentials")
     }
 
     const payload = {
@@ -84,7 +75,9 @@ const loginUser = async (req, res) => {
       },
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: '30d'
+    });
 
     res.status(200).json({
       success: true,
@@ -93,9 +86,7 @@ const loginUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error: ", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Internal server error!! :( !!" });
+    next(err)
   }
 };
 

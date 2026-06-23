@@ -10,7 +10,7 @@ export async function getMyLinks(req, res) {
           message: "Unauthorized, first signin/signup!",
         });
     }
-    const links = Url.find({ user: req.user }).sort({ date: -1 });
+    const links = await Url.find({ user: req.user.id }).sort({ date: -1 });
     res.status(200).json({
       success: true,
       count: links.length,

@@ -10,18 +10,15 @@ export async function createShortUrl(longUrl) {
       body: JSON.stringify({ longUrl }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || "Failed to shorten URL");
+      throw new Error(data.message || "Failed to shorten URL");
     }
 
-    console.log(response.json());
-    return response.json();
-  } catch (err) {
-    console.error("Failed to shorten the url:", err);
-    throw new Error(
-      `An unexpected error occurred, please try again! Reason: ${err.message}`,
-      { cause: err },
-    );
+    return data.data.url;
+  } catch (error) {
+    console.error("Failed to shorten the url:", error);
+    throw error;
   }
 }

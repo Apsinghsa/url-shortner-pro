@@ -11,12 +11,13 @@ export async function registerUser(userData) {
       body: JSON.stringify(userData),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || "Registration failed");
+      throw new Error(data.message || "Registration failed");
     }
 
-    return response.json();
+    return data;
   } catch (error) {
     console.error("Api Error: User registration failed", error);
     throw error;
@@ -33,12 +34,13 @@ export async function loginUser(credentials) {
       body: JSON.stringify(credentials),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || "Login failed");
+      throw new Error(data.message || "Login failed");
     }
 
-    return response.json();
+    return data;
   } catch (error) {
     console.error("Api Error: Login failed", error);
     throw error;
