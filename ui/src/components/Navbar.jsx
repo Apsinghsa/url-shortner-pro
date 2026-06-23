@@ -30,6 +30,11 @@ const Navbar = () => {
               </Link>
             </li>
             <li>
+              <Link to="/mcp" className={linkClass}>
+                MCP
+              </Link>
+            </li>
+            <li>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -41,6 +46,11 @@ const Navbar = () => {
           </>
         ) : (
           <>
+            <li>
+              <Link to="/mcp" className={linkClass}>
+                MCP
+              </Link>
+            </li>
             <li>
               <Link to="/login" className={linkClass}>
                 Login
