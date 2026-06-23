@@ -6,9 +6,12 @@ export default function errorHandler(err, req, res, next) {
   }
   console.error(err.stack);
 
+  const isClientError = statusCode >= 400 && statusCode < 500;
+  const message = isClientError ? err.message : "Internal server error";
+
   res.status(statusCode).json({
     success: false,
-    message: err.message,
-    stack: process.env.NODE_ENV == "production" ? "🥞" : err.stack,
+    message,
+    stack: process.env.NODE_ENV == "development" ? err.stack : "🥞",
   });
 }

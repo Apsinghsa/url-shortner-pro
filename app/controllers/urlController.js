@@ -29,7 +29,9 @@ export async function shortenUrl(req, res) {
   }
 
   try {
-    let url = await Url.findOne({ longUrl: longUrl });
+    const userId = req.user?.id ?? null;
+
+    let url = await Url.findOne({ longUrl, user: userId });
 
     if (url) {
       return res.status(200).json({
@@ -42,17 +44,12 @@ export async function shortenUrl(req, res) {
     const urlCode = nanoid(8);
     const shortUrl = `${process.env.BASE_URL}/${urlCode}`;
 
-    const newUrlData = {
+    url = await Url.create({
       longUrl,
       shortUrl,
       urlCode,
-    };
-
-    if (req.user) {
-      newUrlData.user = req.user.id;
-    }
-
-    url = await Url.create(newUrlData);
+      user: userId,
+    });
 
     res.status(201).json({
       success: true,
@@ -60,6 +57,18 @@ export async function shortenUrl(req, res) {
       data: { url },
     });
   } catch (e) {
+    if (e.code === 11000) {
+      const userId = req.user?.id ?? null;
+      const existing = await Url.findOne({ longUrl, user: userId });
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          message: "Url already exists",
+          data: { url: existing },
+        });
+      }
+    }
+
     console.error("Database error :", e);
     res.status(500).json({
       success: false,

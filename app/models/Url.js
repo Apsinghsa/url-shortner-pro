@@ -29,4 +29,6 @@ const urlSchema = new mongoose.Schema({
   },
 });
 
+urlSchema.index({ longUrl: 1, user: 1 }, { unique: true });
+
 export default mongoose.model("Url", urlSchema);
