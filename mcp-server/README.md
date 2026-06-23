@@ -56,18 +56,67 @@ npm run start:http    # local HTTP
 
 | Tool | Auth | Description |
 |------|------|-------------|
-| `register_user` | — | Create a new account |
-| `login` | — | Log in. Returns a JWT — paste it into the client config for hosted use |
+| `register_user` | — | Create a new account. Returns a JWT — auto-logged-in for stdio, paste into client config for hosted use |
+| `login` | — | Log in. Returns a JWT — same usage as register_user |
 | `logout` | — | Clear the local session (stdio only) |
 | `whoami` | — | Show the current session state |
 | `shorten_url` | optional | Shorten a long URL |
 | `get_my_links` | required | List the authenticated user's links |
 
+## Auth model
+
+Auth is **mixed** — the most common operation (`shorten_url`) works without login, and only `get_my_links` requires a session. This mirrors what the Express backend and the React frontend already do: anonymous shortening is frictionless, the dashboard is auth-gated.
+
+Forcing login on every call would block the killer use case ("AI agent shortens this URL"), so we keep login optional for write operations and required only for the personal dashboard.
+
 ## How auth works
 
-**stdio:** the `login` tool stores the JWT in process memory. `shorten_url` and `get_my_links` use it automatically. Restarting the process clears it.
+**stdio:** the `register_user` and `login` tools store the JWT in process memory. `shorten_url` (if you want the link attached to your account) and `get_my_links` use it automatically. Restarting the process clears it.
 
-**HTTP:** every request must carry `Authorization: Bearer <jwt>`. The MCP server extracts the token per-request — there is no server-side session state. Get the token once via `login` (or by calling the backend's `/api/auth/login` directly), then paste it into your MCP client config. The server is fully stateless and horizontally scalable.
+**HTTP (hosted):** every request must carry `Authorization: Bearer <jwt>`. The MCP server extracts the token per-request — there is no server-side session state. The server is fully stateless and horizontally scalable. Get the token once during setup (see below), then paste it into your MCP client config.
+
+## Getting started with the hosted MCP
+
+Three steps from zero to using the hosted server.
+
+### 1. If you're new, register:
+
+```bash
+curl -X POST https://shortly-mcp.onrender.com/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"hunter22hunter22","name":"Your Name"}'
+```
+
+Returns `{ success, message, token }` — the token is included so you can skip the separate login step.
+
+### 2. Get a token (if you already have an account):
+
+```bash
+curl -X POST https://shortly-mcp.onrender.com/token \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"hunter22hunter22"}'
+```
+
+Returns `{ success, message, token }`.
+
+### 3. Paste the token into your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "shortly": {
+      "url": "https://shortly-mcp.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <paste-token-here>"
+      }
+    }
+  }
+}
+```
+
+Restart your MCP client. Now you can use any tool — `shorten_url`, `get_my_links`, etc. — and the token is sent automatically on every request.
+
+**Anonymous use:** if you only need to shorten URLs (no dashboard), skip steps 1-3. Configure the client with just the `url` and no `Authorization` header. `shorten_url` works without auth.
 
 ## Use with Claude Desktop
 
@@ -89,6 +138,8 @@ npm run start:http    # local HTTP
 
 ### HTTP (hosted)
 
+See **"Getting started with the hosted MCP"** above for the full 3-step flow. Quick recap of the client config:
+
 ```json
 {
   "mcpServers": {
@@ -100,14 +151,6 @@ npm run start:http    # local HTTP
     }
   }
 }
-```
-
-To get the JWT, either call the `login` tool once via the MCP Inspector or curl the backend:
-
-```bash
-curl -X POST https://your-backend.onrender.com/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","password":"yourpass"}'
 ```
 
 ## Deploy to Render

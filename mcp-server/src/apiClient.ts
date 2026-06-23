@@ -68,7 +68,7 @@ export interface MyLinksResponse {
   data: ShortUrl[];
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
   success: boolean;
   message: string;
   token: string;
@@ -79,14 +79,14 @@ export function registerUser(input: {
   email: string;
   password: string;
 }) {
-  return request<{ success: boolean; message: string }>(
-    "/api/auth/register",
-    { method: "POST", body: JSON.stringify(input) },
-  );
+  return request<AuthResponse>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export function loginUser(input: { email: string; password: string }) {
-  return request<LoginResponse>("/api/auth/login", {
+  return request<AuthResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(input),
   });

@@ -42,7 +42,7 @@ export function createServer() {
     "register_user",
     {
       description:
-        "Register a new account on the URL shortener. Returns success/failure; does not log in automatically.",
+        "Register a new account on the URL shortener. The backend returns a JWT in the same response, which is auto-stored in the local session (stdio) and printed in the response for hosted use.",
       inputSchema: z.object({
         email: z.string().email(),
         password: z.string().min(8),
@@ -52,7 +52,13 @@ export function createServer() {
     async ({ email, password, name }) => {
       try {
         const res = await registerUser({ email, password, name });
-        return textResult(res.message ?? "User registered");
+        setModuleSession(res.token, email);
+        return textResult(
+          `${res.message ?? "User registered"}\n` +
+            `Auto-logged in as ${email} (stdio mode).\n` +
+            `JWT: ${res.token}\n\n` +
+            `For hosted MCP: paste this JWT into your client config under headers.Authorization.`,
+        );
       } catch (err) {
         return handleApiError(err);
       }
