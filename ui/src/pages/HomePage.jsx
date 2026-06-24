@@ -1,33 +1,27 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { createShortUrl } from "../services/apiService";
-import Spinner from "../components/Spinner";
+import Footer from "../components/Footer";
 
 export default function HomePage() {
   const [longUrl, setLongUrl] = useState("");
   const [shortUrlData, setShortUrlData] = useState(null);
   const [serverError, setServerError] = useState("");
+  const [fieldError, setFieldError] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
 
   const validateUrl = () => {
-    const errors = {};
-    const urlPattern = new RegExp(
-      "^(https?:\\/\\/)" +
-        "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
-        "((\\d{1,3}\\.){3}\\d{1,3}))" +
-        "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
-        "(\\?[;&a-z\\d%_.~+=-]*)?" +
-        "(\\#[-a-z\\d_]*)?$",
-      "i",
-    );
-
-    if (!longUrl) {
-      errors.longUrl = "URL field cannot be empty.";
-    } else if (!urlPattern.test(longUrl)) {
-      errors.longUrl = "Please enter a valid URL (e.g., https://example.com).";
+    if (!longUrl.trim()) {
+      return "URL field cannot be empty.";
     }
-    return errors;
+    try {
+      const u = new URL(longUrl);
+      if (!/^https?:$/.test(u.protocol)) return "Please enter a valid URL (e.g., https://example.com).";
+    } catch {
+      return "Please enter a valid URL (e.g., https://example.com).";
+    }
+    return "";
   };
 
   async function handleSubmit(e) {
@@ -35,23 +29,17 @@ export default function HomePage() {
     setIsCopied(false);
     setServerError("");
     setShortUrlData(null);
-
-    const validationErrors = validateUrl();
-    setFormErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
+    const err = validateUrl();
+    setFieldError(err);
+    if (err) return;
 
     setIsLoading(true);
     try {
-      const response = await createShortUrl(longUrl);
-      setShortUrlData(response);
+      const data = await createShortUrl(longUrl);
+      setShortUrlData(data);
     } catch (error) {
-      const errorMessage = error.message || "An unexpected error occured!";
-      setServerError(errorMessage);
+      setServerError(error.message || "An unexpected error occurred!");
       setShortUrlData(null);
-      console.error("Error from API :", error);
     } finally {
       setIsLoading(false);
     }
@@ -61,104 +49,146 @@ export default function HomePage() {
     if (!shortUrlData?.shortUrl) return;
     try {
       await navigator.clipboard.writeText(shortUrlData.shortUrl);
-      setIsCopied(true);
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy URL: ", err);
-    }
+    } catch {}
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <header className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Url Shortner</h2>
-        <p className="mt-2 text-gray-600">Enter a long URL, make it short.</p>
-      </header>
+    <>
+      <section className="hero container">
+        <p className="eyebrow">// free_url_shortener</p>
+        <h1>url shortner</h1>
+        <p className="lead">
+          Enter a long URL, make it short. No account required — sign up later to track every click.
+        </p>
+      </section>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-      >
-        <div>
-          <label
-            htmlFor="longUrl-input"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            Your long URL
-          </label>
-          <input
-            id="longUrl-input"
-            type="url"
-            placeholder="https://example.com/long/url/to/shorten"
-            value={longUrl}
-            onChange={(e) => {
-              setLongUrl(e.target.value);
-              if (formErrors.longUrl) {
-                setFormErrors({});
-              }
-            }}
-            required
-            disabled={isLoading}
-            className={`w-full rounded-md border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:bg-gray-100 ${
-              formErrors.longUrl
-                ? "border-danger focus:ring-danger"
-                : "border-gray-300"
-            }`}
-          />
-          {formErrors.longUrl && (
-            <p className="mt-1 text-sm text-danger">{formErrors.longUrl}</p>
+      <section className="container tool-wrap">
+        <div className="tool" data-od-id="shortener-form">
+          <h2>Your long URL</h2>
+          <p className="sub">
+            paste a link, get a short one. we'll save it to your dashboard if you're signed in.
+          </p>
+
+          <form id="shorten-form" onSubmit={handleSubmit} noValidate>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="long-url">your_long_url</label>
+                <input
+                  id="long-url"
+                  className={`input ${fieldError ? "invalid" : ""}`}
+                  type="url"
+                  placeholder="https://example.com/long/url/to/shorten"
+                  autoComplete="off"
+                  value={longUrl}
+                  onChange={(e) => {
+                    setLongUrl(e.target.value);
+                    setFieldError("");
+                    setServerError("");
+                  }}
+                />
+                <div className="field-error" id="url-error">{fieldError}</div>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                id="shorten-btn"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="spinner-sm" /> shortening…
+                  </>
+                ) : (
+                  "shorten"
+                )}
+              </button>
+            </div>
+            {serverError && (
+              <div className="server-error" role="alert">{serverError}</div>
+            )}
+          </form>
+
+          {shortUrlData && (
+            <div className="result" id="result">
+              <h3>Your short URL is ready!</h3>
+              <div className="short-url-row">
+                <a
+                  className="short-url"
+                  href={shortUrlData.shortUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {shortUrlData.shortUrl}
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  id="copy-btn"
+                  onClick={handleCopy}
+                >
+                  {isCopied ? "copied!" : "copy"}
+                </button>
+              </div>
+              <p className="original-note">
+                original: {shortUrlData.longUrl}
+              </p>
+            </div>
           )}
         </div>
+      </section>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="inline-flex min-w-28 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-base font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoading ? <Spinner size="small" /> : "Shorten"}
-        </button>
-      </form>
-
-      {serverError && (
-        <p className="mt-4 text-sm text-danger" role="alert">
-          {serverError}
-        </p>
-      )}
-
-      {shortUrlData && (
-        <section
-          className="mt-8 rounded-lg border border-green-300 bg-green-50 p-6"
-          aria-label="Shortened URL result"
-        >
-          <h3 className="mb-3 text-lg font-semibold text-green-800">
-            Your short URL is ready!
-          </h3>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={shortUrlData.shortUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-link break-all hover:underline"
-            >
-              {shortUrlData.shortUrl}
-            </a>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="rounded-md bg-primary px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {isCopied ? "Copied!" : "Copy"}
-            </button>
+      <section className="features container">
+        <h2>Three things you'll notice in the first ten minutes</h2>
+        <div className="features-grid">
+          <div className="feature">
+            <h3>shorten in one click</h3>
+            <p>Paste a long URL, get a short link, copy, share. No signup walls, no captchas on the first paste.</p>
           </div>
+          <div className="feature">
+            <h3>track every click</h3>
+            <p>Sign in to see total clicks, top referrers, devices, and countries for every link you've created.</p>
+          </div>
+          <div className="feature">
+            <h3>built for AI agents</h3>
+            <p>Connect Claude Desktop (or any MCP client) to Mikku and shorten URLs from a conversation.</p>
+          </div>
+        </div>
+      </section>
 
-          <p className="mt-3 text-sm text-gray-700">
-            Original URL: {shortUrlData.longUrl.substring(0, 70)}...
-          </p>
-        </section>
-      )}
-    </div>
+      <section className="how container">
+        <h2>How it works</h2>
+        <div className="steps">
+          <div className="step">
+            <div className="num">$ paste</div>
+            <h3>Drop in a long URL</h3>
+            <p>Any http or https link. We accept what your browser accepts.</p>
+          </div>
+          <div className="step">
+            <div className="num">$ shorten</div>
+            <h3>Get a short code</h3>
+            <p>An 8-character alias. Optional custom slugs for signed-in users.</p>
+          </div>
+          <div className="step">
+            <div className="num">$ share</div>
+            <h3>Watch the clicks roll in</h3>
+            <p>Every visit is counted. Sign in to see referrers, devices, and countries.</p>
+          </div>
+        </div>
+
+        <div className="mcp-banner">
+          <div>
+            <div className="label">// new</div>
+            <h3>
+              Connect your AI assistant to Mikku via <Link to="/mcp">MCP →</Link>
+            </h3>
+          </div>
+          <Link to="/mcp" className="btn btn-secondary">read the guide</Link>
+        </div>
+      </section>
+
+      <Footer meta="free url shortener with analytics" />
+    </>
   );
 }

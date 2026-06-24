@@ -1,8 +1,9 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const Navbar = () => {
+const baseLinkClass = "font-mono text-[13px] text-muted transition-colors duration-100 hover:text-fg";
+
+export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -11,61 +12,47 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const linkClass =
-    "text-navbar-text transition-colors duration-200 hover:text-navbar-hover";
+  const linkClass = ({ isActive }) =>
+    isActive ? `${baseLinkClass} text-fg` : baseLinkClass;
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between bg-navbar px-8 py-4 shadow-md">
-      <div className="text-xl font-bold">
-        <Link to="/" className="text-white no-underline">
-          Short.ly
-        </Link>
+    <header className="topnav">
+      <div className="container topnav-inner">
+        <NavLink to="/" className="logo">
+          <span className="prompt">$</span>mikku.site
+        </NavLink>
+        <nav>
+          <NavLink to="/shorten" end className={linkClass}>
+            /shorten
+          </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/dashboard" className={linkClass}>
+              /dashboard
+            </NavLink>
+          )}
+          <NavLink to="/mcp" className={linkClass}>
+            /mcp
+          </NavLink>
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={baseLinkClass}
+            >
+              /logout
+            </button>
+          ) : (
+            <>
+              <NavLink to="/login" className={linkClass}>
+                /login
+              </NavLink>
+              <NavLink to="/register" className={linkClass}>
+                /register
+              </NavLink>
+            </>
+          )}
+        </nav>
       </div>
-      <ul className="m-0 flex list-none gap-6 p-0">
-        {isAuthenticated ? (
-          <>
-            <li>
-              <Link to="/dashboard" className={linkClass}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link to="/mcp" className={linkClass}>
-                MCP
-              </Link>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={`${linkClass} cursor-pointer border-none bg-transparent p-0 font-inherit`}
-              >
-                Logout
-              </button>
-            </li>
-          </>
-        ) : (
-          <>
-            <li>
-              <Link to="/mcp" className={linkClass}>
-                MCP
-              </Link>
-            </li>
-            <li>
-              <Link to="/login" className={linkClass}>
-                Login
-              </Link>
-            </li>
-            <li>
-              <Link to="/register" className={linkClass}>
-                Register
-              </Link>
-            </li>
-          </>
-        )}
-      </ul>
-    </nav>
+    </header>
   );
-};
-
-export default Navbar;
+}

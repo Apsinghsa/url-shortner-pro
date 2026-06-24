@@ -1,260 +1,351 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Footer from "../components/Footer";
 
-const HOSTED_MCP_URL = "https://shortly-mcp.onrender.com/mcp";
+const HOSTED_MCP_URL = "https://mikku-mcp.onrender.com/mcp";
+const LOCAL_PATH = "C:/path/to/url_shortner/mcp-server/src/index.ts";
 
-const McpGuidePage = () => {
+function CodeToken({ kind, children }) {
+  return <span className={`code-${kind}`}>{children}</span>;
+}
+
+function HostedSnippet({ token }) {
+  return (
+    <pre>
+      <CodeToken kind="punct">{"{"}</CodeToken>
+      {"\n  "}
+      <CodeToken kind="key">"mcpServers"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n    "}
+      <CodeToken kind="key">"mikku"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n      "}
+      <CodeToken kind="key">"url"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"{HOSTED_MCP_URL}"</CodeToken>
+      <CodeToken kind="punct">,</CodeToken>
+      {"\n      "}
+      <CodeToken kind="key">"headers"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n        "}
+      <CodeToken kind="key">"Authorization"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"Bearer {token}"</CodeToken>
+      {"\n      "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n    "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n  "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n"}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+    </pre>
+  );
+}
+
+function LocalSnippet() {
+  return (
+    <pre>
+      <CodeToken kind="punct">{"{"}</CodeToken>
+      {"\n  "}
+      <CodeToken kind="key">"mcpServers"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n    "}
+      <CodeToken kind="key">"mikku"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n      "}
+      <CodeToken kind="key">"command"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"npx"</CodeToken>
+      <CodeToken kind="punct">,</CodeToken>
+      {"\n      "}
+      <CodeToken kind="key">"args"</CodeToken>
+      <CodeToken kind="punct">: [</CodeToken>
+      <CodeToken kind="string">"tsx"</CodeToken>
+      <CodeToken kind="punct">,</CodeToken> <CodeToken kind="string">"{LOCAL_PATH}"</CodeToken>
+      <CodeToken kind="punct">],</CodeToken>
+      {"\n      "}
+      <CodeToken kind="key">"env"</CodeToken>
+      <CodeToken kind="punct">: {"{"}</CodeToken>
+      {"\n        "}
+      <CodeToken kind="key">"SHORTENER_API_BASE"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"http://localhost:5000"</CodeToken>
+      {"\n      "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n    "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n  "}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+      {"\n"}
+      <CodeToken kind="punct">{"}"}</CodeToken>
+    </pre>
+  );
+}
+
+function InspectorSnippet() {
+  return (
+    <pre>
+      <CodeToken kind="prompt">$</CodeToken> <CodeToken kind="key">npx</CodeToken> <CodeToken kind="string">@anthropic-ai/mcp-inspector</CodeToken> <CodeToken kind="key">npx</CodeToken> <CodeToken kind="string">tsx</CodeToken> <CodeToken kind="string">{LOCAL_PATH}</CodeToken>
+    </pre>
+  );
+}
+
+function CodeBlock({ id, children }) {
+  return (
+    <div className="code-block" id={`code-block-${id}`}>
+      {children}
+    </div>
+  );
+}
+
+export default function McpGuidePage() {
   const { token, isAuthenticated } = useAuth();
+  const isAuth = isAuthenticated && !!token;
+  const activeToken = isAuth ? token : null;
+
   const [tokenRevealed, setTokenRevealed] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
-  const [snippetCopied, setSnippetCopied] = useState(null);
+  const [copied, setCopied] = useState(null);
 
-  const handleCopy = async (text, kind) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      if (kind === "token") {
-        setTokenCopied(true);
-        setTimeout(() => setTokenCopied(false), 2000);
-      } else {
-        setSnippetCopied(kind);
-        setTimeout(() => setSnippetCopied(null), 2000);
-      }
-    } catch (err) {
-      console.error("Failed to copy:", err);
+  const tokenText = isAuth && tokenRevealed ? activeToken : "•".repeat(48);
+  const masked = !isAuth || !tokenRevealed;
+  const tokenBtnLabel = !isAuth
+    ? "login to generate"
+    : !tokenRevealed
+    ? "generate"
+    : tokenCopied
+    ? "copied!"
+    : "copy";
+  const tokenHint = !isAuth
+    ? "login to view your token"
+    : !tokenRevealed
+    ? "token not yet revealed"
+    : tokenCopied
+    ? "token copied to clipboard"
+    : "token revealed. click copy to put it on the clipboard.";
+
+  async function handleTokenAction() {
+    if (!isAuth) return;
+    if (!tokenRevealed) {
+      setTokenRevealed(true);
+      return;
     }
-  };
+    try { await navigator.clipboard.writeText(activeToken); } catch {}
+    setTokenCopied(true);
+    setTimeout(() => setTokenCopied(false), 2000);
+  }
 
-  const hostedSnippet = isAuthenticated
-    ? JSON.stringify(
-        {
-          mcpServers: {
-            shortly: {
-              url: HOSTED_MCP_URL,
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          },
-        },
-        null,
-        2,
-      )
-    : JSON.stringify(
-        {
-          mcpServers: {
-            shortly: {
-              url: HOSTED_MCP_URL,
-              // For authenticated tools (get_my_links), also add:
-              // headers: { Authorization: "Bearer <paste-token-here>" }
-            },
-          },
-        },
-        null,
-        2,
-      );
+  async function handleCopy(kind, text) {
+    try { await navigator.clipboard.writeText(text); } catch {}
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 2000);
+  }
 
-  const stdioSnippet = JSON.stringify(
+  const snippetToken = isAuth ? activeToken : "<your-token>";
+  const hostedText = JSON.stringify(
     {
       mcpServers: {
-        shortly: {
+        mikku: {
+          url: HOSTED_MCP_URL,
+          headers: { Authorization: "Bearer " + snippetToken },
+        },
+      },
+    },
+    null,
+    2
+  );
+
+  const localText = JSON.stringify(
+    {
+      mcpServers: {
+        mikku: {
           command: "npx",
-          args: ["tsx", "C:/path/to/url_shortner/mcp-server/src/index.ts"],
+          args: ["tsx", LOCAL_PATH],
           env: { SHORTENER_API_BASE: "http://localhost:5000" },
         },
       },
     },
     null,
-    2,
+    2
   );
 
-  const inspectorCommand =
-    "npx @anthropic-ai/mcp-inspector npx tsx C:/path/to/url_shortner/mcp-server/src/index.ts";
+  const inspectorText =
+    "npx @anthropic-ai/mcp-inspector npx tsx " + LOCAL_PATH;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <h2 className="text-3xl font-bold text-gray-900">MCP Server</h2>
-        <p className="mt-2 text-gray-600">
-          Let AI agents use the URL shortener through the Model Context Protocol.
-        </p>
-      </header>
+    <>
+      <div className="container-narrow">
+        <div className="page-head">
+          <p className="eyebrow">// model_context_protocol · v1</p>
+          <h1>mcp_server</h1>
+          <p className="lead">
+            Let AI agents use the URL shortener through the Model Context Protocol. Connect Claude Desktop (or any MCP client) in three lines of config.
+          </p>
+        </div>
+      </div>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-xl font-semibold text-gray-900">Your API token</h3>
-        {isAuthenticated ? (
-          <>
-            <p className="mt-2 text-sm text-gray-600">
-              Use this JWT in the <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">Authorization: Bearer &lt;token&gt;</code> header
-              of your MCP client to access your account's links.{" "}
-              <span className="font-medium text-danger">
-                Keep this token private — anyone with it can act on your behalf.
-              </span>
+      <section className="section">
+        <div className="container-narrow">
+          <div className="section-title">
+            <h2>your_api_token</h2>
+            <p className="sub">
+              This JWT is sent in the <code>Authorization: Bearer &lt;token&gt;</code> header by your MCP client.
             </p>
+          </div>
 
-            <div className="mt-4 flex items-stretch gap-2">
-              <code className="flex-1 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800">
-                {tokenRevealed
-                  ? token
-                  : "•".repeat(48) + " (click Generate to reveal)"}
-              </code>
-              {tokenRevealed ? (
-                <button
-                  type="button"
-                  onClick={() => handleCopy(token, "token")}
-                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {tokenCopied ? "Copied!" : "Copy"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setTokenRevealed(true)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  Generate
-                </button>
+          <div className="token-card" data-od-id="token-section">
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>
+              Mikku identifies your MCP client with a JWT. Keep it private — anyone with it can create links against your account.
+            </p>
+            <div className="danger-note">
+              // warning — keep this token private; anyone with it can act on your behalf.
+            </div>
+
+            <div className={`token-display ${tokenRevealed ? "revealed" : ""}`} id="token-display">
+              {tokenText}{" "}
+              {masked && (
+                <span className="masked-hint">
+                  ({isAuth ? "click generate to reveal" : "login first to view"})
+                </span>
               )}
             </div>
-          </>
-        ) : (
-          <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-            <p>
-              <Link to="/login" className="font-medium text-link hover:underline">
-                Log in
-              </Link>{" "}
-              or{" "}
-              <Link to="/register" className="font-medium text-link hover:underline">
-                register
-              </Link>{" "}
-              to get your personal API token. Shortening URLs works without a
-              token — only the dashboard tools need authentication.
-            </p>
-          </div>
-        )}
-      </section>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-xl font-semibold text-gray-900">
-          How to connect an MCP client
-        </h3>
-        <p className="mt-2 text-sm text-gray-600">
-          Add the config below to your MCP client (e.g. Claude Desktop's{" "}
-          <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">claude_desktop_config.json</code>)
-          and restart it. Two transports are available.
-        </p>
-
-        <div className="mt-6 space-y-6">
-          <div>
-            <h4 className="text-base font-semibold text-gray-800">
-              Option 1 — Hosted (HTTP)
-            </h4>
-            <p className="mt-1 text-sm text-gray-600">
-              Connect to the public MCP server. Works from any machine.
-            </p>
-            <div className="mt-3 flex items-stretch gap-2">
-              <pre className="flex-1 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800">
-                {hostedSnippet}
-              </pre>
+            <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
               <button
                 type="button"
-                onClick={() => handleCopy(hostedSnippet, "hosted")}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
+                className="btn btn-primary"
+                id="token-action"
+                onClick={handleTokenAction}
+                disabled={!isAuth}
               >
-                {snippetCopied === "hosted" ? "Copied!" : "Copy"}
+                {tokenBtnLabel}
               </button>
-            </div>
-            {!isAuthenticated && (
-              <p className="mt-2 text-xs text-gray-500">
-                The snippet above is anonymous (shortening only). Log in to get
-                a snippet with your token pre-filled.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <h4 className="text-base font-semibold text-gray-800">
-              Option 2 — Local (stdio)
-            </h4>
-            <p className="mt-1 text-sm text-gray-600">
-              Runs the MCP server as a local process. Best for development.
-              Requires the backend to be running on{" "}
-              <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">localhost:5000</code>.
-            </p>
-            <div className="mt-3 flex items-stretch gap-2">
-              <pre className="flex-1 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800">
-                {stdioSnippet}
-              </pre>
-              <button
-                type="button"
-                onClick={() => handleCopy(stdioSnippet, "stdio")}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {snippetCopied === "stdio" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-base font-semibold text-gray-800">
-              Test with MCP Inspector
-            </h4>
-            <p className="mt-1 text-sm text-gray-600">
-              Spin up the official MCP testing UI to browse and call every tool
-              interactively:
-            </p>
-            <div className="mt-3 flex items-stretch gap-2">
-              <code className="flex-1 overflow-x-auto rounded-md border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800">
-                {inspectorCommand}
-              </code>
-              <button
-                type="button"
-                onClick={() => handleCopy(inspectorCommand, "inspector")}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {snippetCopied === "inspector" ? "Copied!" : "Copy"}
-              </button>
+              <span className="meta" id="token-hint" style={{ alignSelf: "center" }}>
+                {tokenHint}
+              </span>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-xl font-semibold text-gray-900">Available tools</h3>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-wide text-gray-700">
-              <tr>
-                <th className="border-b border-table-header py-2">Tool</th>
-                <th className="border-b border-table-header py-2">Auth</th>
-                <th className="border-b border-table-header py-2">Description</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-table-border text-gray-700">
-              <tr>
-                <td className="py-2 font-mono text-xs">register_user</td>
-                <td className="py-2">—</td>
-                <td className="py-2">Create a new account</td>
-              </tr>
-              <tr>
-                <td className="py-2 font-mono text-xs">login</td>
-                <td className="py-2">—</td>
-                <td className="py-2">Get a fresh JWT</td>
-              </tr>
-              <tr>
-                <td className="py-2 font-mono text-xs">shorten_url</td>
-                <td className="py-2">optional</td>
-                <td className="py-2">Shorten a long URL</td>
-              </tr>
-              <tr>
-                <td className="py-2 font-mono text-xs">get_my_links</td>
-                <td className="py-2">required</td>
-                <td className="py-2">List the user's links</td>
-              </tr>
-            </tbody>
-          </table>
+      <section className="section">
+        <div className="container-narrow">
+          <div className="section-title">
+            <h2>how_to_connect</h2>
+            <p className="sub">Pick one of the three options below. Copy the snippet into your client's config.</p>
+          </div>
+
+          <div className="option" data-od-id="option-hosted">
+            <div className="opt-head">
+              <div>
+                <span className="opt-num">// option_01 · hosted</span>
+                <h3>Hosted (HTTP)</h3>
+              </div>
+              <button
+                className="btn btn-dark btn-tiny copy-btn"
+                onClick={() => handleCopy("hosted", hostedText)}
+                type="button"
+              >
+                {copied === "hosted" ? "copied!" : "copy"}
+              </button>
+            </div>
+            <p className="opt-sub">Connect to the public MCP server. Works from any machine.</p>
+            <CodeBlock id="hosted">
+              <HostedSnippet token={activeToken} />
+            </CodeBlock>
+            <p className="anon-hint">
+              {isAuth
+                ? <>// the snippet above uses your real JWT.</>
+                : <>// login to fill in this snippet with your real JWT.</>}
+            </p>
+          </div>
+
+          <div className="option" data-od-id="option-local">
+            <div className="opt-head">
+              <div>
+                <span className="opt-num">// option_02 · local</span>
+                <h3>Local (stdio)</h3>
+              </div>
+              <button
+                className="btn btn-dark btn-tiny copy-btn"
+                onClick={() => handleCopy("local", localText)}
+                type="button"
+              >
+                {copied === "local" ? "copied!" : "copy"}
+              </button>
+            </div>
+            <p className="opt-sub">
+              Runs the MCP server as a local process. Best for development. Requires the backend to be running on <code>localhost:5000</code>.
+            </p>
+            <CodeBlock id="local">
+              <LocalSnippet />
+            </CodeBlock>
+          </div>
+
+          <div className="option" data-od-id="option-inspector">
+            <div className="opt-head">
+              <div>
+                <span className="opt-num">// option_03 · inspector</span>
+                <h3>Test with MCP Inspector</h3>
+              </div>
+              <button
+                className="btn btn-dark btn-tiny copy-btn"
+                onClick={() => handleCopy("inspector", inspectorText)}
+                type="button"
+              >
+                {copied === "inspector" ? "copied!" : "copy"}
+              </button>
+            </div>
+            <p className="opt-sub">Spin up the official MCP testing UI to browse and call every tool interactively.</p>
+            <CodeBlock id="inspector">
+              <InspectorSnippet />
+            </CodeBlock>
+          </div>
         </div>
       </section>
-    </div>
+
+      <section className="section">
+        <div className="container-narrow">
+          <div className="section-title">
+            <h2>available_tools</h2>
+            <p className="sub">Every tool the Mikku MCP server exposes. Auth column shows whether a JWT is required.</p>
+          </div>
+
+          <div data-od-id="tools-table">
+            <table className="ds-table">
+              <thead>
+                <tr>
+                  <th>tool</th>
+                  <th>auth</th>
+                  <th>description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span className="tool-name">register_user</span></td>
+                  <td><span className="auth-pill">—</span></td>
+                  <td>Create a new account</td>
+                </tr>
+                <tr>
+                  <td><span className="tool-name">login</span></td>
+                  <td><span className="auth-pill">—</span></td>
+                  <td>Get a fresh JWT</td>
+                </tr>
+                <tr>
+                  <td><span className="tool-name">shorten_url</span></td>
+                  <td><span className="auth-pill optional">optional</span></td>
+                  <td>Shorten a long URL. Authenticated requests attach the new link to the user's account.</td>
+                </tr>
+                <tr>
+                  <td><span className="tool-name">get_my_links</span></td>
+                  <td><span className="auth-pill required">required</span></td>
+                  <td>List the authenticated user's links</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <Footer meta="mcp server · 4 tools exposed" />
+    </>
   );
-};
-
-export default McpGuidePage;
+}

@@ -1,11 +1,12 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+import OverviewPage from "./pages/OverviewPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import McpGuidePage from "./pages/McpGuidePage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
@@ -13,11 +14,12 @@ import Navbar from "./components/Navbar";
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="app-shell">
         <Navbar />
-        <main className="mx-auto max-w-5xl px-4 py-8">
+        <main>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<OverviewPage />} />
+            <Route path="/shorten" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/mcp" element={<McpGuidePage />} />
@@ -29,6 +31,7 @@ function App() {
                 </PrivateRoute>
               }
             />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
       </div>
