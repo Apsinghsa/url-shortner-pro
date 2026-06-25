@@ -39,6 +39,10 @@ const registerUser = async (req, res) => {
       password: hashedPass,
     });
 
+    console.log(
+      `[AUTH] New user registered at ${new Date().toISOString()} — id: ${newUser._id}, email: ${newUser.email}, name: ${newUser.name}`
+    );
+
     const payload = {
       user: {
         id: newUser._id,
@@ -80,6 +84,10 @@ const loginUser = async (req, res, next) => {
       res.status(401);
       throw new Error("Invalid credentials")
     }
+
+    console.log(
+      `[AUTH] User logged in at ${new Date().toISOString()} — id: ${user._id}, email: ${user.email}`
+    );
 
     const payload = {
       user: {
