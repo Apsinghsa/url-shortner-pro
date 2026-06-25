@@ -6,7 +6,11 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token") || "");
 
   const [isAuthenticated, setIsAuthenticated] = useState(!!token);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
 
   function login(newToken) {
     localStorage.setItem("token", newToken);

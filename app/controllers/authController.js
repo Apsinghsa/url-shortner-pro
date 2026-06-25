@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   try {
     if (!req.body) {
       res.status(400);
@@ -17,7 +17,7 @@ const registerUser = async (req, res) => {
 
     if (password.length < 8) {
       res.status(400);
-      throw new Error("Password should be more then 8 characters")
+      throw new Error("Password should be more then 8 characters");
     }
 
     const existingUser = await User.findOne({ email: email });
@@ -27,10 +27,7 @@ const registerUser = async (req, res) => {
       throw new Error("A user with this email already exists!!");
     }
 
-    // Hashing the password
-
     const salt = await bcrypt.genSalt(10);
-
     const hashedPass = await bcrypt.hash(password, salt);
 
     const newUser = await User.create({
@@ -60,8 +57,7 @@ const registerUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Registration error : ", err);
-    res.status(500);
-    throw new Error("Internal server error: ");
+    next(err);
   }
 };
 

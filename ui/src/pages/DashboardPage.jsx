@@ -1,17 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getUserLinks } from "../services/linkService";
+import { getUserLinks, getClicksByDay } from "../services/linkService";
 import Footer from "../components/Footer";
 import ClicksChart from "../components/ClicksChart";
-
-const PROTOTYPE_LINKS = [
-  { slug: "aB12xY9z", share: 0.30, clicks: 412, longUrl: "https://example.com/products/launch/2026/q2/roadmap" },
-  { slug: "launch",   share: 0.24, clicks: 287, longUrl: "https://newsletter.example.com/issues/issue-42-launching-mikku" },
-  { slug: "v040",     share: 0.18, clicks: 134, longUrl: "https://github.com/anomalyco/url-shortner/releases/tag/v0.4.0" },
-  { slug: "blogpost", share: 0.16, clicks: 96,  longUrl: "https://blog.example.com/2026/06/why-we-built-mikku" },
-  { slug: "demo",     share: 0.12, clicks: 52,  longUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-];
+import ClicksOverTimeChart from "../components/ClicksOverTimeChart";
 
 const SHORT_URL_RE = /^(https?:\/\/mikku\.site\/)(.+)$/;
 function truncateShortUrl(url) {
@@ -19,6 +12,15 @@ function truncateShortUrl(url) {
   if (!m) return url;
   const [, prefix, slug] = m;
   return slug.length > 10 ? prefix + slug.slice(0, 10) + "...." : url;
+}
+
+function formatDate(date) {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function CopyIcon() {
@@ -38,30 +40,27 @@ function CheckIcon() {
   );
 }
 
-function UrlRow({ slug, longUrl, clicks, isShort = false, copiedKey, onCopy }) {
-  const fullUrl = isShort ? `https://mikku.site/${slug}` : longUrl;
-  const fullHref = isShort ? fullUrl : longUrl;
-  const visible = isShort ? truncateShortUrl(fullUrl) : longUrl;
-  const dataUrl = isShort ? fullUrl : longUrl;
-  const key = `${isShort ? "s" : "o"}-${slug}`;
+function UrlRow({ url, isShort = false, copiedKey, onCopy }) {
+  const visible = isShort ? truncateShortUrl(url) : url;
+  const key = isShort ? `s-${url}` : `o-${url}`;
   const copied = copiedKey === key;
   return (
     <div className="url-cell-row">
       <a
         className={`url ${isShort ? "short-cell" : "url-cell"}`}
-        href={fullHref}
+        href={url}
         target="_blank"
         rel="noopener noreferrer"
-        title={fullHref}
+        title={url}
       >
         {visible}
       </a>
       <button
         className={`url-copy ${copied ? "copied" : ""}`}
-        data-url={dataUrl}
+        data-url={url}
         aria-label={isShort ? "Copy short URL" : "Copy original URL"}
         type="button"
-        onClick={() => onCopy(key, dataUrl)}
+        onClick={() => onCopy(key, url)}
       >
         <CopyIcon />
         <CheckIcon />
@@ -70,11 +69,22 @@ function UrlRow({ slug, longUrl, clicks, isShort = false, copiedKey, onCopy }) {
   );
 }
 
+function SortArrow({ dir }) {
+  return <span className="sort-indicator">{dir === "desc" ? "▼" : "▲"}</span>;
+}
+
 export default function DashboardPage() {
   const [links, setLinks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState(null);
+
+  const [clicksByDay, setClicksByDay] = useState([]);
+  const [clicksLoading, setClicksLoading] = useState(true);
+  const [clicksError, setClicksError] = useState("");
+
+  const [sortField, setSortField] = useState("date");
+  const [sortDir, setSortDir] = useState("desc");
 
   const { token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -90,39 +100,89 @@ export default function DashboardPage() {
         const response = await getUserLinks(token);
         if (cancelled) return;
         const list = response?.data ?? response?.links ?? [];
-        if (list.length > 0) {
-          setLinks(
-            list.map((l) => ({
-              slug: l.shortCode ?? l.slug ?? l.code ?? l._id,
-              share: 1 / list.length,
-              clicks: l.clicks ?? 0,
-              longUrl: l.longUrl,
-            }))
-          );
-        } else {
-          setLinks(PROTOTYPE_LINKS);
-        }
+        setLinks(
+          list.map((l) => ({
+            _id: l._id,
+            slug: l.urlCode,
+            shortUrl: l.shortUrl,
+            longUrl: l.longUrl,
+            clicks: l.clickCount ?? 0,
+            createdAt: l.date,
+          }))
+        );
       } catch (err) {
         if (cancelled) return;
-        setLinks(PROTOTYPE_LINKS);
+        setError(err.message || "Failed to load your links");
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [token, isAuthenticated]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadClicks() {
+      if (!isAuthenticated) {
+        setClicksLoading(false);
+        return;
+      }
+      try {
+        const response = await getClicksByDay(token, 30);
+        if (cancelled) return;
+        setClicksByDay(response?.data ?? []);
+      } catch (err) {
+        if (cancelled) return;
+        setClicksError(err.message || "Failed to load clicks");
+      } finally {
+        if (!cancelled) setClicksLoading(false);
+      }
+    }
+    loadClicks();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, isAuthenticated]);
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDir(sortDir === "desc" ? "asc" : "desc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  }
+
+  const sortedLinks = useMemo(() => {
+    const sorted = [...links];
+    sorted.sort((a, b) => {
+      let cmp;
+      if (sortField === "clicks") {
+        cmp = (a.clicks || 0) - (b.clicks || 0);
+        if (cmp === 0) {
+          cmp = new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        }
+      } else {
+        cmp = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      }
+      return sortDir === "desc" ? -cmp : cmp;
+    });
+    return sorted;
+  }, [links, sortField, sortDir]);
+
   async function handleCopy(key, url) {
-    try { await navigator.clipboard.writeText(url); } catch {}
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {}
     setCopiedKey(key);
     setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
   }
 
-  const totalClicks = links.reduce((a, l) => a + l.clicks, 0);
-  const totalLinks = 12;
-  const thisWeek = 312;
-  const topReferrer = "twitter.com";
+  const totalClicks = links.reduce((a, l) => a + (l.clicks || 0), 0);
+  const totalLinks = links.length;
 
   return (
     <>
@@ -136,53 +196,61 @@ export default function DashboardPage() {
         <div className="stats-row" data-od-id="stats">
           <div className="stat-block">
             <span className="label">total_links</span>
-            <span className="value num">{totalLinks}</span>
+            <span className="value num">{totalLinks.toLocaleString()}</span>
           </div>
           <div className="stat-block">
             <span className="label">total_clicks</span>
-            <span className="value num">1,847</span>
-            <span className="delta">+18% vs. last month</span>
-          </div>
-          <div className="stat-block">
-            <span className="label">this_week</span>
-            <span className="value num">{thisWeek}</span>
-          </div>
-          <div className="stat-block">
-            <span className="label">top_referrer</span>
-            <span className="value" style={{ fontSize: 16 }}>{topReferrer}</span>
+            <span className="value num">{totalClicks.toLocaleString()}</span>
           </div>
         </div>
 
-        <ClicksChart links={links.length > 0 ? links : PROTOTYPE_LINKS} />
+        <ClicksChart links={links} isLoading={isLoading} />
 
         <div id="table-region">
           <div className="table-wrap" data-od-id="links-table">
-            <table className="ds-table">
-              <thead>
-                <tr>
-                  <th>original_url</th>
-                  <th>short_url</th>
-                  <th className="num-col">clicks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+            {isLoading ? (
+              <div className="loading-state">
+                <div className="spinner-md" />
+                <p>loading your links…</p>
+              </div>
+            ) : error ? (
+              <div className="empty-state">
+                <p className="eyebrow">// error</p>
+                <p>couldn't load your links: {error}</p>
+              </div>
+            ) : links.length === 0 ? (
+              <div className="empty-state">
+                <p className="eyebrow">// no_links_yet</p>
+                <p>you haven't shortened anything yet. paste a URL on the shortener page to create your first link.</p>
+              </div>
+            ) : (
+              <table className="ds-table">
+                <thead>
                   <tr>
-                    <td colSpan={3}>
-                      <div className="loading-state">
-                        <div className="spinner-md" />
-                        <p>loading your links…</p>
-                      </div>
-                    </td>
+                    <th>original_url</th>
+                    <th>short_url</th>
+                    <th
+                      className={`sortable${sortField === "date" ? " active" : ""}`}
+                      onClick={() => handleSort("date")}
+                    >
+                      created
+                      {sortField === "date" && <SortArrow dir={sortDir} />}
+                    </th>
+                    <th
+                      className={`num-col sortable${sortField === "clicks" ? " active" : ""}`}
+                      onClick={() => handleSort("clicks")}
+                    >
+                      clicks
+                      {sortField === "clicks" && <SortArrow dir={sortDir} />}
+                    </th>
                   </tr>
-                ) : (
-                  links.map((link) => (
-                    <tr key={link.slug}>
+                </thead>
+                <tbody>
+                  {sortedLinks.map((link) => (
+                    <tr key={link._id}>
                       <td>
                         <UrlRow
-                          slug={link.slug}
-                          longUrl={link.longUrl}
-                          clicks={link.clicks}
+                          url={link.longUrl}
                           isShort={false}
                           copiedKey={copiedKey}
                           onCopy={handleCopy}
@@ -190,25 +258,32 @@ export default function DashboardPage() {
                       </td>
                       <td>
                         <UrlRow
-                          slug={link.slug}
-                          longUrl={link.longUrl}
-                          clicks={link.clicks}
+                          url={link.shortUrl}
                           isShort={true}
                           copiedKey={copiedKey}
                           onCopy={handleCopy}
                         />
                       </td>
+                      <td className="date-col">{formatDate(link.createdAt)}</td>
                       <td className="num-col">{link.clicks.toLocaleString()}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
+
+        <ClicksOverTimeChart
+          data={clicksByDay}
+          isLoading={clicksLoading}
+          error={clicksError}
+        />
       </div>
 
-      <Footer meta={`12 links · 1,847 clicks · all-time`} />
+      <Footer
+        meta={`${totalLinks} ${totalLinks === 1 ? "link" : "links"} · ${totalClicks.toLocaleString()} clicks · all-time`}
+      />
     </>
   );
 }

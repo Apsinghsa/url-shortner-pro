@@ -148,7 +148,7 @@ export default function HomePage() {
           </div>
           <div className="feature">
             <h3>track every click</h3>
-            <p>Sign in to see total clicks, top referrers, devices, and countries for every link you've created.</p>
+            <p>Sign in to see total clicks and your full link history for every short URL you've created.</p>
           </div>
           <div className="feature">
             <h3>built for AI agents</h3>
@@ -173,7 +173,7 @@ export default function HomePage() {
           <div className="step">
             <div className="num">$ share</div>
             <h3>Watch the clicks roll in</h3>
-            <p>Every visit is counted. Sign in to see referrers, devices, and countries.</p>
+            <p>Every visit is counted. Sign in to see your link history and per-link click totals.</p>
           </div>
         </div>
 

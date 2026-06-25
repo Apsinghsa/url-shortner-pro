@@ -18,6 +18,10 @@ const urlSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
+  clicks: {
+    type: [{ type: Date }],
+    default: [],
+  },
   date: {
     type: Date,
     default: Date.now,

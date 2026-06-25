@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Footer from "../components/Footer";
 
 const HOSTED_MCP_URL = "https://mikku-mcp.onrender.com/mcp";
-const LOCAL_PATH = "C:/path/to/url_shortner/mcp-server/src/index.ts";
+const LOCAL_PATH = "<absolute-path-to>/mcp-server/src/index.ts";
 
 function CodeToken({ kind, children }) {
   return <span className={`code-${kind}`}>{children}</span>;

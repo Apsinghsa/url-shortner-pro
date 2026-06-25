@@ -341,7 +341,7 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
 /* =============================================================
    Dashboard — chart (Mono tokens, vanilla SVG)
    ============================================================= */
-.chart { background: var(--bg); box-shadow: var(--elev-ring); border-radius: var(--radius-md); padding: 22px 26px 20px; margin-bottom: 20px; --color-clicks: var(--fg); }
+.chart { background: var(--bg); box-shadow: var(--elev-ring); border-radius: var(--radius-md); padding: 22px 26px 20px; margin: 20px 0; --color-clicks: var(--fg); }
 .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; flex-wrap: wrap; }
 .chart-head .title-block .eyebrow { margin-bottom: 6px; }
 .chart-head h2 { font-family: var(--font-display); font-size: 18px; font-weight: 500; letter-spacing: -0.015em; }
@@ -390,6 +390,25 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
 .chart-tooltip .tt-row .slug { color: var(--fg); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chart-tooltip .tt-row .count { color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .chart-x-axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 10px; letter-spacing: 0.02em; padding: 0 4px; }
+
+/* clicks-by-link bar chart */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 24px minmax(0, 100px) 1fr 80px; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 12px; }
+.bar-rank { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.bar-slug { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { background: var(--border-soft); height: 8px; border-radius: 4px; overflow: hidden; }
+.bar-fill { background: var(--fg); height: 100%; border-radius: 4px; transition: width 300ms var(--ease-standard); }
+.bar-count { color: var(--fg); font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 640px) {
+  .bar-row { grid-template-columns: 20px minmax(0, 80px) 1fr 60px; gap: 8px; font-size: 11px; }
+}
+
+/* sortable table headers */
+.ds-table th.sortable { cursor: pointer; user-select: none; transition: color 100ms var(--ease-standard); }
+.ds-table th.sortable:hover { color: var(--fg); }
+.ds-table th.sortable.active { color: var(--fg); }
+.sort-indicator { margin-left: 6px; font-size: 9px; opacity: 0.75; }
+.ds-table .date-col { color: var(--muted); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
   .chart-svg .hover-line, .chart-svg .hover-dot, .chart-tooltip { transition: none; }
 }

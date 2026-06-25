@@ -197,7 +197,7 @@ export default function OverviewPage() {
                 <McpFlow />
                 <MiniStatusStrip
                   left={<><span className="live"><span className="pulse"></span>online</span><span className="sep">·</span>JSON-RPC 2.0<span className="sep">·</span>SSE</>}
-                  right="9 tools · 1 prompt"
+                  right="4 tools · 0 prompts"
                 />
               </div>
               <p className="route">/mcp</p>

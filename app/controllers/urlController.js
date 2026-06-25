@@ -3,13 +3,6 @@ import validUrl from "valid-url";
 import Url from "../models/Url.js";
 
 export async function shortenUrl(req, res) {
-  if (!req.body) {
-    return res.status(400).json({
-      success: false,
-      message: "Request body empty!!",
-    });
-  }
-
   const { longUrl } = req.body;
 
   console.log("long url rec. :", longUrl);
@@ -85,6 +78,7 @@ export async function redirectToUrl(req, res) {
 
     if (url) {
       url.clickCount++;
+      url.clicks.push(new Date());
 
       await url.save();
 
