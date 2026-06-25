@@ -13,10 +13,13 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://url-shortner-pro.vercel.app",
-];
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ||
+  "http://localhost:5173"
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
