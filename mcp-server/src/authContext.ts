@@ -5,9 +5,9 @@ export interface AuthContext {
 }
 
 // Per-request token, set by the HTTP transport from the Authorization header.
-// Falls back to SHORTLY_MCP_TOKEN for stdio (set in the MCP client config).
+// Falls back to MIKKU_MCP_TOKEN for stdio (set in the MCP client config).
 export const authStorage = new AsyncLocalStorage<AuthContext>();
 
 export function getToken(): string | undefined {
-  return authStorage.getStore()?.token ?? process.env.SHORTLY_MCP_TOKEN;
+  return authStorage.getStore()?.token ?? process.env.MIKKU_MCP_TOKEN;
 }

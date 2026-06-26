@@ -38,7 +38,7 @@ const mockGetMyLinks = vi.mocked(getMyLinks);
 const mockGetClicksByDay = vi.mocked(getClicksByDay);
 
 const NO_AUTH_MSG =
-  "Not authenticated. For HTTP, send Authorization: Bearer <jwt>. For stdio, set the SHORTLY_MCP_TOKEN env var.";
+  "Not authenticated. For HTTP, send Authorization: Bearer <jwt>. For stdio, set the MIKKU_MCP_TOKEN env var.";
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -21,7 +21,7 @@ Both transports share the same tool definitions, so the API surface is identical
 cd mcp-server
 npm install
 cp .env.example .env
-# edit .env: set SHORTENER_API_BASE to your backend, paste your JWT into SHORTLY_MCP_TOKEN
+# edit .env: set SHORTENER_API_BASE to your backend, paste your JWT into MIKKU_MCP_TOKEN
 ```
 
 ## Run
@@ -54,7 +54,7 @@ npm run start:http    # local HTTP
 |---------|---------|---------|
 | `SHORTENER_API_BASE` | `http://localhost:5000` | Base URL of the Express backend. Set in `.env` locally, in Render's dashboard for production. |
 | `PORT` | `3001` | HTTP listen port. Ignored by the stdio transport. Render sets this automatically. |
-| `SHORTLY_MCP_TOKEN` | — | **Required for stdio.** The JWT issued by the web app. Ignored by the HTTP transport, which reads the token per-request from the `Authorization` header. |
+| `MIKKU_MCP_TOKEN` | — | **Required for stdio.** The JWT issued by the web app. Ignored by the HTTP transport, which reads the token per-request from the `Authorization` header. |
 
 ## Tools
 
@@ -73,11 +73,11 @@ This matches the auth model of the dashboard: every meaningful operation is attr
 
 ## How auth works
 
-**stdio:** set `SHORTLY_MCP_TOKEN` in your MCP client config's `env` block. The MCP server reads it on every request. To rotate, update the env var and restart the client.
+**stdio:** set `MIKKU_MCP_TOKEN` in your MCP client config's `env` block. The MCP server reads it on every request. To rotate, update the env var and restart the client.
 
 **HTTP (hosted):** every request must carry `Authorization: Bearer <jwt>`. The MCP server extracts the token per-request via an `AsyncLocalStorage` — there is no server-side session state. The server is fully stateless and horizontally scalable.
 
-Per-request `Authorization` headers always take precedence over `SHORTLY_MCP_TOKEN`, but the two never run together in practice: stdio processes never see HTTP requests, and HTTP requests are never routed through the stdio transport.
+Per-request `Authorization` headers always take precedence over `MIKKU_MCP_TOKEN`, but the two never run together in practice: stdio processes never see HTTP requests, and HTTP requests are never routed through the stdio transport.
 
 ## Getting a token
 
@@ -86,7 +86,7 @@ Per-request `Authorization` headers always take precedence over `SHORTLY_MCP_TOK
 3. Click **generate** to reveal your JWT, then **copy**.
 4. Paste the JWT into your MCP client config:
    - **HTTP**: under `headers.Authorization` as `Bearer <token>`
-   - **stdio**: into the `env.SHORTLY_MCP_TOKEN` field
+   - **stdio**: into the `env.MIKKU_MCP_TOKEN` field
 
 ## Use with Claude Desktop
 
@@ -100,7 +100,7 @@ Per-request `Authorization` headers always take precedence over `SHORTLY_MCP_TOK
       "args": ["tsx", "C:/path/to/url_shortner/mcp-server/src/index.ts"],
       "env": {
         "SHORTENER_API_BASE": "http://localhost:5000",
-        "SHORTLY_MCP_TOKEN": "<paste-jwt-here>"
+        "MIKKU_MCP_TOKEN": "<paste-jwt-here>"
       }
     }
   }
@@ -150,8 +150,8 @@ Per-request `Authorization` headers always take precedence over `SHORTLY_MCP_TOK
 ## Use with MCP Inspector
 
 ```bash
-# stdio — set SHORTLY_MCP_TOKEN in your shell first
-export SHORTLY_MCP_TOKEN=<paste-jwt-here>
+# stdio — set MIKKU_MCP_TOKEN in your shell first
+export MIKKU_MCP_TOKEN=<paste-jwt-here>
 npx @anthropic-ai/mcp-inspector npx tsx src/index.ts
 
 # HTTP (server must be running)

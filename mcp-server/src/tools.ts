@@ -33,7 +33,7 @@ function handleApiError(err: unknown): ReturnType<typeof textResult> {
 }
 
 const NO_AUTH_MSG =
-  "Not authenticated. For HTTP, send Authorization: Bearer <jwt>. For stdio, set the SHORTLY_MCP_TOKEN env var.";
+  "Not authenticated. For HTTP, send Authorization: Bearer <jwt>. For stdio, set the MIKKU_MCP_TOKEN env var.";
 
 export async function handleWhoami() {
   return textResult(getToken() ? "Authenticated" : "Not authenticated");
@@ -100,7 +100,7 @@ export function createServer() {
     "whoami",
     {
       description:
-        "Show whether a JWT is currently visible to the MCP server. Reads the Authorization header (HTTP) or the SHORTLY_MCP_TOKEN env var (stdio).",
+        "Show whether a JWT is currently visible to the MCP server. Reads the Authorization header (HTTP) or the MIKKU_MCP_TOKEN env var (stdio).",
       inputSchema: z.object({}),
     },
     handleWhoami,
@@ -110,7 +110,7 @@ export function createServer() {
     "shorten_url",
     {
       description:
-        "Create a short URL attached to the authenticated user's account. Requires a JWT (Authorization header on HTTP, SHORTLY_MCP_TOKEN env var on stdio).",
+        "Create a short URL attached to the authenticated user's account. Requires a JWT (Authorization header on HTTP, MIKKU_MCP_TOKEN env var on stdio).",
       inputSchema: z.object({
         longUrl: z
           .string()

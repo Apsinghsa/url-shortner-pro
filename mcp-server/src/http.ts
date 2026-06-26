@@ -30,7 +30,7 @@ app.post("/mcp", async (req, res) => {
   const token = parseBearer(req.header("authorization"));
   // In stateless mode, McpServer can only handle one request — create a
   // fresh instance per call. Shared state lives in tool implementations
-  // (authStorage for HTTP, SHORTLY_MCP_TOKEN env for stdio).
+  // (authStorage for HTTP, MIKKU_MCP_TOKEN env for stdio).
   const mcpServer = createServer();
   try {
     await authStorage.run({ token }, async () => {

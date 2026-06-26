@@ -154,7 +154,7 @@ Only needed if you want to use the local stdio MCP transport or run the hosted H
 cd ../mcp-server
 npm install
 cp .env.example .env
-# edit .env: set SHORTENER_API_BASE to your backend, and paste your JWT into SHORTLY_MCP_TOKEN for stdio
+# edit .env: set SHORTENER_API_BASE to your backend, and paste your JWT into MIKKU_MCP_TOKEN for stdio
 ```
 
 ### 5. Run the Application
