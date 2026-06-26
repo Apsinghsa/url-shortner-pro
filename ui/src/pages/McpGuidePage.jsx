@@ -44,7 +44,8 @@ function HostedSnippet({ token }) {
   );
 }
 
-function LocalSnippet() {
+function LocalSnippet({ token }) {
+  const authValue = token || "YOUR_AUTH_TOKEN";
   return (
     <pre>
       <CodeToken kind="punct">{"{"}</CodeToken>
@@ -73,7 +74,7 @@ function LocalSnippet() {
       <CodeToken kind="punct">,</CodeToken>
       {"\n        "}
       <CodeToken kind="key">"MIKKU_MCP_TOKEN"</CodeToken>
-      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"YOUR_AUTH_TOKEN"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"{authValue}"</CodeToken>
       {"\n      "}
       <CodeToken kind="punct">{"}"}</CodeToken>
       {"\n    "}
@@ -165,7 +166,7 @@ export default function McpGuidePage() {
         mikku: {
           command: "npx",
           args: ["tsx", LOCAL_PATH],
-          env: { SHORTENER_API_BASE: "http://localhost:5000", MIKKU_MCP_TOKEN: "YOUR_AUTH_TOKEN" },
+          env: { SHORTENER_API_BASE: "http://localhost:5000", MIKKU_MCP_TOKEN: snippetToken },
         },
       },
     },
@@ -284,8 +285,15 @@ export default function McpGuidePage() {
               Runs the MCP server as a local process. Best for development. Requires the backend to be running on <code>localhost:5000</code>.
             </p>
             <CodeBlock id="local">
-              <LocalSnippet />
+              <LocalSnippet token={isAuth && tokenRevealed ? activeToken : null} />
             </CodeBlock>
+            <p className="anon-hint">
+              {!isAuth
+                ? <>// login to fill in this snippet with your real JWT.</>
+                : !tokenRevealed
+                ? <>// click <code>generate</code> above to fill in your real JWT.</>
+                : <>// the snippet above uses your real JWT.</>}
+            </p>
           </div>
 
           <div className="option" data-od-id="option-inspector">
