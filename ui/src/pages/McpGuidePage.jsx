@@ -11,6 +11,7 @@ function CodeToken({ kind, children }) {
 }
 
 function HostedSnippet({ token }) {
+  const authValue = token || "YOUR_AUTH_TOKEN";
   return (
     <pre>
       <CodeToken kind="punct">{"{"}</CodeToken>
@@ -29,7 +30,7 @@ function HostedSnippet({ token }) {
       <CodeToken kind="punct">: {"{"}</CodeToken>
       {"\n        "}
       <CodeToken kind="key">"Authorization"</CodeToken>
-      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"Bearer {token}"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"Bearer {authValue}"</CodeToken>
       {"\n      "}
       <CodeToken kind="punct">{"}"}</CodeToken>
       {"\n    "}
@@ -139,7 +140,7 @@ export default function McpGuidePage() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  const snippetToken = isAuth ? activeToken : "<your-token>";
+  const snippetToken = isAuth && tokenRevealed ? activeToken : "YOUR_AUTH_TOKEN";
   const hostedText = JSON.stringify(
     {
       mcpServers: {
@@ -249,12 +250,14 @@ export default function McpGuidePage() {
             </div>
             <p className="opt-sub">Connect to the public MCP server. Works from any machine.</p>
             <CodeBlock id="hosted">
-              <HostedSnippet token={activeToken} />
+              <HostedSnippet token={isAuth && tokenRevealed ? activeToken : null} />
             </CodeBlock>
             <p className="anon-hint">
-              {isAuth
-                ? <>// the snippet above uses your real JWT.</>
-                : <>// login to fill in this snippet with your real JWT.</>}
+              {!isAuth
+                ? <>// login to fill in this snippet with your real JWT.</>
+                : !tokenRevealed
+                ? <>// click <code>generate</code> above to fill in your real JWT.</>
+                : <>// the snippet above uses your real JWT.</>}
             </p>
           </div>
 
