@@ -40,3 +40,5 @@ Thumbs.db
 # Project notes (not for commit)
 PAGES.md
 design/
+
+.mcp.json
