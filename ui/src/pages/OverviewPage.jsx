@@ -190,9 +190,10 @@ export default function OverviewPage() {
                   <span className="c-yellow">Authorization</span>: <span className="c-green">"Bearer eyJ…"</span>
                 </div>
                 <ul className="mini-tools">
+                  <li><span className="tool-name">whoami</span><span className="tool-desc">check auth</span></li>
                   <li><span className="tool-name">shorten_url</span><span className="tool-desc">create link</span></li>
-                  <li><span className="tool-name">list_links</span><span className="tool-desc">fetch yours</span></li>
-                  <li><span className="tool-name">get_stats</span><span className="tool-desc">analytics</span></li>
+                  <li><span className="tool-name">get_my_links</span><span className="tool-desc">fetch yours</span></li>
+                  <li><span className="tool-name">get_clicks_by_day</span><span className="tool-desc">analytics</span></li>
                 </ul>
                 <McpFlow />
                 <MiniStatusStrip

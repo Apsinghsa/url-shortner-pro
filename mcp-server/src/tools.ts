@@ -2,13 +2,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   ApiError,
+  getClicksByDay,
   getMyLinks,
-  loginUser,
-  registerUser,
   shortenUrl,
   type ShortUrl,
 } from "./apiClient.js";
-import { getEmail, getToken, setModuleSession } from "./authContext.js";
+import { getToken } from "./authContext.js";
 
 function textResult(text: string) {
   return { content: [{ type: "text" as const, text }] };
@@ -26,109 +25,92 @@ function formatUrl(url: ShortUrl): string {
 
 function handleApiError(err: unknown): ReturnType<typeof textResult> {
   if (err instanceof ApiError) {
-    return textResult(`API error ${err.status}: ${err.message}`);
+    const body = err.body !== undefined ? ` — ${JSON.stringify(err.body)}` : "";
+    return textResult(`API error ${err.status}: ${err.message}${body}`);
   }
   const msg = err instanceof Error ? err.message : String(err);
   return textResult(`Unexpected error: ${msg}`);
 }
 
+const NO_AUTH_MSG =
+  "Not authenticated. For HTTP, send Authorization: Bearer <jwt>. For stdio, set the SHORTLY_MCP_TOKEN env var.";
+
+export async function handleWhoami() {
+  return textResult(getToken() ? "Authenticated" : "Not authenticated");
+}
+
+export async function handleShortenUrl({ longUrl }: { longUrl: string }) {
+  const token = getToken();
+  if (!token) return textResult(NO_AUTH_MSG);
+  try {
+    const res = await shortenUrl(longUrl, token);
+    if (res.data?.url) {
+      return textResult(formatUrl(res.data.url));
+    }
+    return textResult(res.message ?? "URL shortened (no payload returned)");
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+export async function handleGetMyLinks() {
+  const token = getToken();
+  if (!token) return textResult(NO_AUTH_MSG);
+  try {
+    const res = await getMyLinks(token);
+    if (!res.data?.length) {
+      return textResult("No links found for this user.");
+    }
+    return textResult(
+      `${res.count} link(s):\n\n` + res.data.map(formatUrl).join("\n\n"),
+    );
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+export async function handleGetClicksByDay(
+  args: { days?: number } = {},
+) {
+  const token = getToken();
+  if (!token) return textResult(NO_AUTH_MSG);
+  try {
+    const res = await getClicksByDay(args.days ?? 30, token);
+    if (!res.data?.length) {
+      return textResult("No click data for this period.");
+    }
+    const lines = res.data.map(
+      ({ date, count }) => `${date}: ${count}`,
+    );
+    return textResult(
+      `Clicks per day (${res.count} day(s)):\n\n` + lines.join("\n"),
+    );
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
 export function createServer() {
   const server = new McpServer({
-    name: "shortly",
-    version: "0.2.0",
+    name: "mikku",
+    version: "0.3.0",
   });
-
-  server.registerTool(
-    "register_user",
-    {
-      description:
-        "Register a new account on the URL shortener. The backend returns a JWT in the same response, which is auto-stored in the local session (stdio) and printed in the response for hosted use.",
-      inputSchema: z.object({
-        email: z.string().email(),
-        password: z.string().min(8),
-        name: z.string().optional(),
-      }),
-    },
-    async ({ email, password, name }) => {
-      try {
-        const res = await registerUser({ email, password, name });
-        setModuleSession(res.token, email);
-        return textResult(
-          `${res.message ?? "User registered"}\n` +
-            `Auto-logged in as ${email} (stdio mode).\n` +
-            `JWT: ${res.token}\n\n` +
-            `For hosted MCP: paste this JWT into your client config under headers.Authorization.`,
-        );
-      } catch (err) {
-        return handleApiError(err);
-      }
-    },
-  );
-
-  server.registerTool(
-    "login",
-    {
-      description:
-        "Log in to the URL shortener. Returns a JWT — paste it into your MCP client config as `Authorization: Bearer <token>` to authenticate subsequent calls.",
-      inputSchema: z.object({
-        email: z.string().email(),
-        password: z.string(),
-      }),
-    },
-    async ({ email, password }) => {
-      try {
-        const res = await loginUser({ email, password });
-        setModuleSession(res.token, email);
-        return textResult(
-          `Logged in as ${email}\nJWT: ${res.token}\n\n` +
-            `For hosted MCP: paste this JWT into your client config under headers.Authorization. ` +
-            `For local stdio: the token is stored automatically for this session.`,
-        );
-      } catch (err) {
-        return handleApiError(err);
-      }
-    },
-  );
-
-  server.registerTool(
-    "logout",
-    {
-      description:
-        "Clear the session (stdio mode only). For hosted MCP, simply remove the Authorization header.",
-      inputSchema: z.object({}),
-    },
-    async () => {
-      const { token, email } = { token: getToken(), email: getEmail() };
-      if (!token) {
-        return textResult("Not currently logged in");
-      }
-      setModuleSession(undefined, undefined);
-      return textResult(`Logged out ${email ?? ""}`.trim());
-    },
-  );
 
   server.registerTool(
     "whoami",
     {
       description:
-        "Show the current session state. Reads the Authorization header (HTTP) or in-memory session (stdio).",
+        "Show whether a JWT is currently visible to the MCP server. Reads the Authorization header (HTTP) or the SHORTLY_MCP_TOKEN env var (stdio).",
       inputSchema: z.object({}),
     },
-    async () => {
-      const token = getToken();
-      const email = getEmail();
-      if (!token) {
-        return textResult("Anonymous (not authenticated)");
-      }
-      return textResult(`Authenticated as ${email ?? "(unknown email)"}`);
-    },
+    handleWhoami,
   );
 
   server.registerTool(
     "shorten_url",
     {
       description:
-        "Create a short URL. If authenticated, the link is associated with the user's account.",
+        "Create a short URL attached to the authenticated user's account. Requires a JWT (Authorization header on HTTP, SHORTLY_MCP_TOKEN env var on stdio).",
       inputSchema: z.object({
         longUrl: z
           .string()
@@ -136,45 +118,34 @@ export function createServer() {
           .describe("The long URL to shorten, e.g. https://example.com/very/long"),
       }),
     },
-    async ({ longUrl }) => {
-      try {
-        const res = await shortenUrl(longUrl, getToken());
-        if (res.data?.url) {
-          return textResult(formatUrl(res.data.url));
-        }
-        return textResult(res.message ?? "URL shortened (no payload returned)");
-      } catch (err) {
-        return handleApiError(err);
-      }
-    },
+    handleShortenUrl,
   );
 
   server.registerTool(
     "get_my_links",
     {
-      description:
-        "List the short URLs created by the currently authenticated user. Requires login.",
+      description: "List the short URLs created by the authenticated user. Requires a JWT.",
       inputSchema: z.object({}),
     },
-    async () => {
-      const token = getToken();
-      if (!token) {
-        return textResult(
-          "Not authenticated. For hosted MCP, set Authorization: Bearer <jwt>. For stdio, call the `login` tool first.",
-        );
-      }
-      try {
-        const res = await getMyLinks(token);
-        if (!res.data?.length) {
-          return textResult("No links found for this user.");
-        }
-        return textResult(
-          `${res.count} link(s):\n\n` + res.data.map(formatUrl).join("\n\n"),
-        );
-      } catch (err) {
-        return handleApiError(err);
-      }
+    handleGetMyLinks,
+  );
+
+  server.registerTool(
+    "get_clicks_by_day",
+    {
+      description:
+        "Get the authenticated user's click counts aggregated per day over the last N days (1-90, default 30). Requires a JWT.",
+      inputSchema: z.object({
+        days: z
+          .number()
+          .int()
+          .min(1)
+          .max(90)
+          .optional()
+          .describe("Number of days to include (1-90, default 30)"),
+      }),
     },
+    handleGetClicksByDay,
   );
 
   return server;

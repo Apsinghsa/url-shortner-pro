@@ -6,10 +6,10 @@ async function main() {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("shortly-mcp running on stdio");
+  console.error("mikku-mcp running on stdio");
 }
 
 main().catch((err) => {
-  console.error("Fatal error starting shortly-mcp:", err);
+  console.error("Fatal error starting mikku-mcp:", err);
   process.exit(1);
 });

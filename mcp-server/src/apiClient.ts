@@ -1,4 +1,6 @@
-const API_BASE = process.env.SHORTENER_API_BASE ?? "http://localhost:5000";
+function getApiBase(): string {
+  return process.env.SHORTENER_API_BASE ?? "http://localhost:5000";
+}
 
 export class ApiError extends Error {
   constructor(
@@ -16,7 +18,7 @@ async function request<T>(
   init: RequestInit & { token?: string } = {},
 ): Promise<T> {
   const { token, headers, ...rest } = init;
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getApiBase()}${path}`, {
     ...rest,
     headers: {
       "Content-Type": "application/json",
@@ -68,31 +70,13 @@ export interface MyLinksResponse {
   data: ShortUrl[];
 }
 
-export interface AuthResponse {
+export interface ClicksByDayResponse {
   success: boolean;
-  message: string;
-  token: string;
+  count: number;
+  data: Array<{ date: string; count: number }>;
 }
 
-export function registerUser(input: {
-  name?: string;
-  email: string;
-  password: string;
-}) {
-  return request<AuthResponse>("/api/auth/register", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
-
-export function loginUser(input: { email: string; password: string }) {
-  return request<AuthResponse>("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-}
-
-export function shortenUrl(longUrl: string, token?: string) {
+export function shortenUrl(longUrl: string, token: string) {
   return request<ShortenResponse>("/api/shorten", {
     method: "POST",
     body: JSON.stringify({ longUrl }),
@@ -102,4 +86,11 @@ export function shortenUrl(longUrl: string, token?: string) {
 
 export function getMyLinks(token: string) {
   return request<MyLinksResponse>("/api/links/my-links", { token });
+}
+
+export function getClicksByDay(days: number, token: string) {
+  return request<ClicksByDayResponse>(
+    `/api/links/clicks-by-day?days=${days}`,
+    { token },
+  );
 }

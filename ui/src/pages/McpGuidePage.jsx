@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Footer from "../components/Footer";
 
-const HOSTED_MCP_URL = "https://mikku-mcp.onrender.com/mcp";
+const HOSTED_MCP_URL =
+  import.meta.env.VITE_HOSTED_MCP_URL ?? "https://mikku-mcp.onrender.com/mcp";
 const LOCAL_PATH = "<absolute-path-to>/mcp-server/src/index.ts";
 
 function CodeToken({ kind, children }) {
@@ -69,6 +70,10 @@ function LocalSnippet() {
       {"\n        "}
       <CodeToken kind="key">"SHORTENER_API_BASE"</CodeToken>
       <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"http://localhost:5000"</CodeToken>
+      <CodeToken kind="punct">,</CodeToken>
+      {"\n        "}
+      <CodeToken kind="key">"SHORTLY_MCP_TOKEN"</CodeToken>
+      <CodeToken kind="punct">:</CodeToken> <CodeToken kind="string">"YOUR_AUTH_TOKEN"</CodeToken>
       {"\n      "}
       <CodeToken kind="punct">{"}"}</CodeToken>
       {"\n    "}
@@ -160,7 +165,7 @@ export default function McpGuidePage() {
         mikku: {
           command: "npx",
           args: ["tsx", LOCAL_PATH],
-          env: { SHORTENER_API_BASE: "http://localhost:5000" },
+          env: { SHORTENER_API_BASE: "http://localhost:5000", SHORTLY_MCP_TOKEN: "YOUR_AUTH_TOKEN" },
         },
       },
     },
@@ -323,24 +328,24 @@ export default function McpGuidePage() {
               </thead>
               <tbody>
                 <tr>
-                  <td><span className="tool-name">register_user</span></td>
+                  <td><span className="tool-name">whoami</span></td>
                   <td><span className="auth-pill">—</span></td>
-                  <td>Create a new account</td>
-                </tr>
-                <tr>
-                  <td><span className="tool-name">login</span></td>
-                  <td><span className="auth-pill">—</span></td>
-                  <td>Get a fresh JWT</td>
+                  <td>Show whether a JWT is currently visible to the MCP server</td>
                 </tr>
                 <tr>
                   <td><span className="tool-name">shorten_url</span></td>
-                  <td><span className="auth-pill optional">optional</span></td>
-                  <td>Shorten a long URL. Authenticated requests attach the new link to the user's account.</td>
+                  <td><span className="auth-pill required">required</span></td>
+                  <td>Shorten a long URL. The new link is attached to the authenticated user's account.</td>
                 </tr>
                 <tr>
                   <td><span className="tool-name">get_my_links</span></td>
                   <td><span className="auth-pill required">required</span></td>
                   <td>List the authenticated user's links</td>
+                </tr>
+                <tr>
+                  <td><span className="tool-name">get_clicks_by_day</span></td>
+                  <td><span className="auth-pill required">required</span></td>
+                  <td>Get the authenticated user's click counts aggregated per day over the last N days (1-90, default 30)</td>
                 </tr>
               </tbody>
             </table>

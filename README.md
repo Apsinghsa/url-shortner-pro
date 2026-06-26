@@ -1,4 +1,4 @@
-# Full-Stack URL Shortener Service (Short.ly)
+# Mikku — Full-Stack URL Shortener Service
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -30,10 +30,9 @@ A full-stack URL shortening service built with the MERN stack (MongoDB, Express.
 
 - **Two transports** — stdio (local process) and HTTP (deployable, e.g. Render)
 - **Same tool surface** across both transports
-- **Mixed auth model** — `shorten_url` works anonymously, `get_my_links` requires a JWT
+- **Auth-only model** — every MCP tool requires a JWT, issued by the web app
 - **Stateless HTTP mode** — token is sent per-request via `Authorization: Bearer <jwt>`, no server-side session
-- **Auth-setup endpoints** — `POST /register` and `POST /token` on the hosted server for one-time JWT retrieval
-- **In-app setup guide** — `/mcp-guide` page in the React UI shows the user's JWT, ready-to-paste client configs, and the Inspector command
+- **In-app setup guide** — `/mcp` page in the React UI shows the user's JWT, ready-to-paste client configs, and the Inspector command
 
 ---
 
@@ -95,7 +94,7 @@ A full-stack URL shortening service built with the MERN stack (MongoDB, Express.
 ├── mcp-server/           # MCP server (stdio + HTTP)
 │   ├── src/
 │   │   ├── index.ts      # stdio transport entry
-│   │   ├── http.ts       # HTTP transport entry (also exposes /register and /token)
+│   │   ├── http.ts       # HTTP transport entry
 │   │   ├── tools.ts      # MCP tool definitions
 │   │   ├── apiClient.ts  # Backend API client
 │   │   └── authContext.ts
@@ -132,7 +131,7 @@ Create `app/.env`:
 
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/shortly?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/mikku?retryWrites=true&w=majority
 BASE_URL=http://localhost:5000
 JWT_SECRET=your_super_secret_jwt_key_here
 ```
@@ -142,6 +141,9 @@ JWT_SECRET=your_super_secret_jwt_key_here
 ```bash
 cd ../ui
 npm install
+cp .env.example .env
+# edit .env: VITE_HOSTED_MCP_URL is the public URL of the hosted MCP server
+# (default points at the Render deployment; override for self-hosting)
 ```
 
 ### 4. MCP Server Setup (optional)
@@ -152,7 +154,7 @@ Only needed if you want to use the local stdio MCP transport or run the hosted H
 cd ../mcp-server
 npm install
 cp .env.example .env
-# edit .env so SHORTENER_API_BASE points at your backend
+# edit .env: set SHORTENER_API_BASE to your backend, and paste your JWT into SHORTLY_MCP_TOKEN for stdio
 ```
 
 ### 5. Run the Application
@@ -199,7 +201,7 @@ For the full MCP-server setup, hosted deployment, and Claude Desktop configurati
 |--------|----------|------|-------------|
 | POST | `/api/auth/register` | No | Register a new user. **Returns a JWT** so the client can auto-log in. |
 | POST | `/api/auth/login` | No | Log in. Returns a JWT. |
-| POST | `/api/shorten` | No | Create a short URL. Per-user uniqueness: the same `longUrl` can exist once per user. |
+| POST | `/api/shorten` | Yes (required) | Create a short URL. Per-user uniqueness: the same `longUrl` can exist once per user. The new model always sends a JWT. |
 | GET | `/:code` | No | Redirect to original URL. |
 | GET | `/api/links/my-links` | Yes | Get the authenticated user's links. |
 
@@ -211,8 +213,6 @@ For the full MCP-server setup, hosted deployment, and Claude Desktop configurati
 |--------|----------|-------------|
 | GET | `/health` | Health check |
 | POST | `/mcp` | Streamable HTTP MCP transport (auth via `Authorization: Bearer <jwt>`) |
-| POST | `/register` | One-shot register; returns the JWT |
-| POST | `/token` | One-shot login; returns the JWT |
 
 ---
 
@@ -222,12 +222,10 @@ Exposed by the MCP server (both transports):
 
 | Tool | Auth | Description |
 |------|------|-------------|
-| `register_user` | — | Create a new account. The backend returns a JWT in the same response, auto-stored in the local session (stdio) or printed in the response for hosted use. |
-| `login` | — | Log in. Returns a JWT (same usage as `register_user`). |
-| `logout` | — | Clear the local session (stdio only). |
-| `whoami` | — | Show the current session state. |
-| `shorten_url` | optional | Shorten a long URL. |
+| `whoami` | — | Show whether a JWT is currently visible to the MCP server. |
+| `shorten_url` | required | Shorten a long URL; attaches the new link to the authenticated user's account. |
 | `get_my_links` | required | List the authenticated user's links. |
+| `get_clicks_by_day` | required | Get the authenticated user's click counts aggregated per day (1-90 days, default 30). |
 
 ---
 
