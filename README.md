@@ -8,6 +8,45 @@ A full-stack URL shortening service built with the MERN stack (MongoDB, Express.
 
 ---
 
+## Self-host with Docker
+
+The full stack — MongoDB, Express backend, MCP HTTP server, React frontend behind an nginx reverse proxy — comes up with a single command:
+
+```bash
+# Windows (PowerShell)
+.\up.ps1
+
+# macOS / Linux / Git Bash
+make up
+```
+
+On first run the script copies `.env.example` to `.env` and auto-generates a `JWT_SECRET`. Subsequent runs reuse `.env` so registered users and short links persist across `down` / `up` cycles (data lives in a named Docker volume called `mongo_data`).
+
+The UI is served on `http://localhost` (or whatever you set `PUBLIC_BASE_URL` to in `.env`). Only one host port is exposed by default — the frontend's port (`80`; override with `UI_PORT=8080` in `.env`).
+
+### Common commands
+
+| Task            | Windows              | *nix / Git Bash        |
+|-----------------|----------------------|------------------------|
+| Start the stack | `.\up.ps1`           | `make up`              |
+| View logs       | `docker compose logs -f` | `make logs`        |
+| Stop the stack  | `docker compose down`    | `make down`       |
+| Wipe everything | `docker compose down --volumes` | `make reset` |
+
+### Configuration
+
+The root `.env` (auto-created on first `up`) controls a few values:
+
+| Variable          | Default          | Purpose                                                                                |
+|-------------------|------------------|----------------------------------------------------------------------------------------|
+| `PUBLIC_BASE_URL` | `http://localhost` | Public URL short links point at; also the CORS origin and the `/mcp` URL the in-app guide shows. |
+| `UI_PORT`         | `80`             | Host port the frontend listens on.                                                     |
+| `JWT_SECRET`      | (auto)           | Signing key for auth tokens. Don't change after users have registered.                 |
+
+The dev workflow (`npm run dev` in each service) is unchanged — Docker is a deployment option, not a replacement.
+
+---
+
 ## Features
 
 ### Web app
