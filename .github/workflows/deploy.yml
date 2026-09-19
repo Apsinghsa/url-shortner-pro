@@ -82,7 +82,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/mikku
+            cd ~/mikku/deploy
             cat > prod.env <<EOF
             MONGO_URI=${MONGO_URI}
             PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
