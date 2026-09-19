@@ -1,0 +1,39 @@
+# Mikku — backend + MCP server only (frontend stays on Vercel).
+# DB is Atlas (managed), so NO local mongo container runs on the 1GB box.
+# Secret values come from prod.env (see prod.env.example).
+# Overrides: `docker compose --env-file prod.env up -d`
+services:
+  backend:
+    image: ghcr.io/apsinghsa/url-shortner-pro-backend:latest
+    container_name: mikku-backend
+    restart: unless-stopped
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      PORT: 5000
+      BASE_URL: ${PUBLIC_BASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    networks:
+      - mikku-net
+
+  mcp:
+    image: ghcr.io/apsinghsa/url-shortner-pro-mcp:latest
+    container_name: mikku-mcp
+    restart: unless-stopped
+    environment:
+      SHORTENER_API_BASE: http://backend:5000
+      PORT: 3001
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    networks:
+      - mikku-net
+
+networks:
+  mikku-net:
+    driver: bridge

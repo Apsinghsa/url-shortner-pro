@@ -1,0 +1,92 @@
+name: Build & Deploy Mikku
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'mcp-server/**', '.github/workflows/**']
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/apsinghsa/url-shortner-pro-backend
+  IMAGE_MCP: ghcr.io/apsinghsa/url-shortner-pro-mcp
+
+jobs:
+  build-and-push:
+    name: Build & push images to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend_digest: ${{ steps.backend.outputs.digest }}
+      mcp_digest: ${{ steps.mcp.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        id: backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_BACKEND }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push MCP server
+        id: mcp
+        uses: docker/build-push-action@v6
+        with:
+          context: ./mcp-server
+          file: ./mcp-server/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_MCP }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Azure VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "deploy/docker-compose.yml"
+          target: "~/mikku"
+
+      - name: Write prod.env, pull & restart
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/mikku
+            cat > prod.env <<EOF
+            MONGO_URI=${MONGO_URI}
+            PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+            JWT_SECRET=${JWT_SECRET}
+            ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+            EOF
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker compose --env-file prod.env pull
+            docker compose --env-file prod.env up -d
+            docker image prune -f
