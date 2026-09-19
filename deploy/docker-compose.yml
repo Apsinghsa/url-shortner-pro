@@ -2,6 +2,8 @@
 # DB is Atlas (managed), so NO local mongo container runs on the 1GB box.
 # Secret values come from prod.env (see prod.env.example).
 # Overrides: `docker compose --env-file prod.env up -d`
+name: mikku
+
 services:
   backend:
     image: ghcr.io/apsinghsa/url-shortner-pro-backend:latest
