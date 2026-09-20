@@ -13,7 +13,7 @@ env:
 jobs:
   build-and-push:
     name: Build & push images to GHCR
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -57,7 +57,7 @@ jobs:
   deploy:
     name: Deploy to Azure VPS
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
